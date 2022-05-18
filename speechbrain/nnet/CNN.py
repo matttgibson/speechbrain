@@ -1110,11 +1110,6 @@ class DepthwiseSeparableConv2d(nn.Module):
 
         return out
 
-def torch_floor(i: float):
-    return int(torch.floor(torch.tensor(i)).item())
-
-#sourceTensor.clone().detach()
-
 def get_padding_elem(L_in: int, stride: int, kernel_size: int, dilation: int):
     """This function computes the number of elements to add for zero-padding.
 
@@ -1126,19 +1121,16 @@ def get_padding_elem(L_in: int, stride: int, kernel_size: int, dilation: int):
     dilation : int
     """
     if stride > 1:
-        #padding = [torch_floor(kernel_size / 2), torch_floor(kernel_size / 2)]
         padding = [math.floor(kernel_size / 2), math.floor(kernel_size / 2)]
 
     else:
         L_out = (
-            #torch_floor((L_in - dilation * (kernel_size - 1) - 1) / stride) + 1
             math.floor((L_in - dilation * (kernel_size - 1) - 1) / stride) + 1
         )
         padding = [
             math.floor((L_in - L_out) / 2),
             math.floor((L_in - L_out) / 2),
         ]
-        #print(f"MG: L_in is {L_in} , L_out is {L_out}, padding is {padding}")
 
     return padding
 
