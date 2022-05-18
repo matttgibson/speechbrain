@@ -1015,6 +1015,17 @@ class InputNormalization(torch.nn.Module):
         current_means = []
         current_stds = []
 
+        #print('MG: input normalisation on features!')
+
+        updated = True
+        
+        if self.norm_type == "sentence" and updated:
+            #print('MG: input normalisation on features - norm_type sentence!')
+            current_mean, current_std = self._compute_current_stats_updated(x, dim=1)
+            x = (x - current_mean) / current_std
+            return x
+
+        
         for snt_id in range(N_batches):
 
             # Avoiding padded time steps
@@ -1029,11 +1040,11 @@ class InputNormalization(torch.nn.Module):
             current_stds.append(current_std)
 
             if self.norm_type == "sentence":
-
+                #print('MG: input normalisation on features - norm_type sentence!')
                 x[snt_id] = (x[snt_id] - current_mean.data) / current_std.data
 
             if self.norm_type == "speaker":
-
+                #print('MG: input normalisation on features - norm_type speaker!')
                 spk_id = int(spk_ids[snt_id][0])
 
                 if self.training:
@@ -1086,7 +1097,6 @@ class InputNormalization(torch.nn.Module):
                 x = (x - current_mean.data) / (current_std.data)
 
             if self.norm_type == "global":
-
                 if self.training:
                     if self.count == 0:
                         self.glob_mean = current_mean
@@ -1115,6 +1125,35 @@ class InputNormalization(torch.nn.Module):
 
         return x
 
+    def _compute_current_stats_updated(self, x, dim=0):
+        """Returns the tensor with the surrounding context.
+        Arguments
+        ---------
+        x : tensor
+            A batch of tensors.
+        """
+	# Compute current mean
+        if self.mean_norm:
+            current_mean = torch.mean(x, dim=dim, keepdim=True)
+        else:
+            current_mean = torch.zeros_like(x, device=x.device)
+            current_mean = torch.mean(current_mean, dim=dim, keepdim=True)
+
+        # Compute current std
+        if self.std_norm:
+            current_std = torch.std(x, dim=dim, keepdim=True)
+        else:
+            current_std = torch.ones_like(x, device=x.device)
+            current_std = torch.mean(current_std, dim=dim, keepdim=True)
+
+        # Improving numerical stability of std
+        current_std = torch.max(
+            current_std, self.eps * torch.ones_like(current_std)
+        )
+
+        return current_mean, current_std
+
+            
     def _compute_current_stats(self, x):
         """Returns the tensor with the surrounding context.
 
