@@ -46,6 +46,14 @@ from speechbrain.utils.checkpoints import (
 
 logger = logging.getLogger(__name__)
 
+# 'tracing' flag enables mean-normalisation of features to be traced. Set to False to revert to standard behaviour.
+# Note that the following are not supported when tracing == True:
+# - batch length > 1
+# - padding
+# - variance normalisation
+# - speaker-level normalisation
+tracing = True
+
 
 class STFT(torch.nn.Module):
     """computes the Short-Term Fourier Transform (STFT).
@@ -1015,12 +1023,7 @@ class InputNormalization(torch.nn.Module):
         current_means = []
         current_stds = []
 
-        #print('MG: input normalisation on features!')
-
-        updated = True
-        
-        if self.norm_type == "sentence" and updated:
-            #print('MG: input normalisation on features - norm_type sentence!')
+        if self.norm_type == "sentence" and tracing:
             current_mean, current_std = self._compute_current_stats_updated(x, dim=1)
             x = (x - current_mean) / current_std
             return x
@@ -1040,11 +1043,9 @@ class InputNormalization(torch.nn.Module):
             current_stds.append(current_std)
 
             if self.norm_type == "sentence":
-                #print('MG: input normalisation on features - norm_type sentence!')
                 x[snt_id] = (x[snt_id] - current_mean.data) / current_std.data
 
             if self.norm_type == "speaker":
-                #print('MG: input normalisation on features - norm_type speaker!')
                 spk_id = int(spk_ids[snt_id][0])
 
                 if self.training:
