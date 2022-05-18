@@ -100,6 +100,8 @@ class SincConv(nn.Module):
         if in_channels is None:
             in_channels = self._check_input_shape(input_shape)
 
+        self.in_channels = in_channels
+        
         # Initialize Sinc filters
         self._init_sinc_conv()
 
@@ -285,8 +287,9 @@ class SincConv(nn.Module):
         """
 
         # Detecting input shape
-        L_in = x.shape[-1]
-
+        #L_in = x.shape[-1]
+        L_in = self.in_channels
+        
         # Time padding
         padding = get_padding_elem(L_in, stride, kernel_size, dilation)
 
@@ -367,6 +370,8 @@ class Conv1d(nn.Module):
         if in_channels is None:
             in_channels = self._check_input_shape(input_shape)
 
+        self.in_channels = in_channels
+            
         self.conv = nn.Conv1d(
             in_channels,
             out_channels,
@@ -440,8 +445,9 @@ class Conv1d(nn.Module):
         """
 
         # Detecting input shape
-        L_in = x.shape[-1]
-
+        #L_in = x.shape[-1]
+        L_in = self.in_channels
+        
         # Time padding
         padding = get_padding_elem(L_in, stride, kernel_size, dilation)
 
@@ -554,9 +560,11 @@ class Conv2d(nn.Module):
         if in_channels is None:
             in_channels = self._check_input(input_shape)
 
+        self.in_channels = in_channels
+        
         # Weights are initialized following pytorch approach
         self.conv = nn.Conv2d(
-            in_channels,
+            self.in_channels,
             out_channels,
             self.kernel_size,
             stride=self.stride,
@@ -617,8 +625,9 @@ class Conv2d(nn.Module):
         stride: int
         """
         # Detecting input shape
-        L_in = x.shape[-1]
-
+        #L_in = x.shape[-1]
+        L_in = self.in_channels
+        
         # Time padding
         padding_time = get_padding_elem(
             L_in, stride[-1], kernel_size[-1], dilation[-1]
@@ -1101,6 +1110,10 @@ class DepthwiseSeparableConv2d(nn.Module):
 
         return out
 
+def torch_floor(i: float):
+    return int(torch.floor(torch.tensor(i)).item())
+
+#sourceTensor.clone().detach()
 
 def get_padding_elem(L_in: int, stride: int, kernel_size: int, dilation: int):
     """This function computes the number of elements to add for zero-padding.
@@ -1113,16 +1126,20 @@ def get_padding_elem(L_in: int, stride: int, kernel_size: int, dilation: int):
     dilation : int
     """
     if stride > 1:
+        #padding = [torch_floor(kernel_size / 2), torch_floor(kernel_size / 2)]
         padding = [math.floor(kernel_size / 2), math.floor(kernel_size / 2)]
 
     else:
         L_out = (
+            #torch_floor((L_in - dilation * (kernel_size - 1) - 1) / stride) + 1
             math.floor((L_in - dilation * (kernel_size - 1) - 1) / stride) + 1
         )
         padding = [
             math.floor((L_in - L_out) / 2),
             math.floor((L_in - L_out) / 2),
         ]
+        #print(f"MG: L_in is {L_in} , L_out is {L_out}, padding is {padding}")
+
     return padding
 
 
